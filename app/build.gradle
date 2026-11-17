@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'ai.itappens.dailyplanner'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'ai.itappens.dailyplanner'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    // Fixed key so every new build installs over the old one and keeps your data.
+    signingConfigs {
+        release {
+            storeFile file('release.keystore')
+            storePassword System.getenv('KEYSTORE_PASSWORD') ?: 'dailyplanner'
+            keyAlias 'dailyplanner'
+            keyPassword System.getenv('KEYSTORE_PASSWORD') ?: 'dailyplanner'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

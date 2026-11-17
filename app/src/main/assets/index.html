@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4338ca">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Daily Planner">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Daily Planner &amp; Journal — Sadish</title>
+<style>
+:root{
+  --bg:#f5f6fb;--card:#fff;--ink:#141626;--muted:#6b6f85;--line:#e6e8f0;
+  --accent:#4338ca;--accent-soft:#eef0ff;--good:#16a34a;--warn:#d97706;--bad:#dc2626;
+  --good-soft:#e8f7ee;--warn-soft:#fdf3e2;--bad-soft:#fdecec;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1020;--card:#1a1c30;--ink:#eceefa;--muted:#9a9db5;--line:#2a2d45;
+  --accent:#8b8cf8;--accent-soft:#25275a;--good-soft:#123323;--warn-soft:#3a2a10;--bad-soft:#3d1717;}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--accent);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px}
+header h1{margin:0;font-size:18px;font-weight:650}
+header .sub{font-size:12px;opacity:.85}
+main{padding:12px 12px calc(84px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h2{margin:0 0 10px;font-size:15px;font-weight:650}
+.row{display:flex;gap:10px;align-items:center}
+.between{justify-content:space-between}
+.muted{color:var(--muted);font-size:13px}
+input,textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+textarea{min-height:64px;resize:vertical}
+label.f{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+button{font:inherit;border:0;border-radius:12px;padding:11px 14px;font-weight:600;cursor:pointer;background:var(--accent-soft);color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;width:100%;padding:14px;font-size:16px}
+button.small{padding:7px 10px;font-size:13px}
+.habit{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.habit:last-child{border-bottom:0}
+.tick{width:28px;height:28px;border-radius:9px;border:2px solid var(--line);display:grid;place-items:center;flex:none;transition:.15s}
+.habit.done .tick{background:var(--good);border-color:var(--good)}
+.habit.done .tick::after{content:"";width:8px;height:14px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-2px)}
+.habit .name{flex:1;font-weight:550}
+.habit .t{font-size:12px;color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 12px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-weight:550;cursor:pointer}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.score{display:flex;align-items:center;gap:14px}
+.ring{width:74px;height:74px;flex:none}
+.status{font-weight:700;font-size:17px}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:650}
+.g{background:var(--good-soft);color:var(--good)}.y{background:var(--warn-soft);color:var(--warn)}.r{background:var(--bad-soft);color:var(--bad)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--bg);border-radius:12px;padding:10px}
+.kpi b{display:block;font-size:20px}
+.kpi span{font-size:12px;color:var(--muted)}
+.signal{background:var(--accent-soft);border-radius:14px;padding:12px;font-weight:550}
+.banner{background:var(--warn-soft);border:1px solid var(--warn);border-radius:14px;padding:12px;margin-bottom:12px;display:none}
+.banner.on{display:block}
+.list-item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.list-item:last-child{border-bottom:0}
+.list-item .grow{flex:1;min-width:0}
+.ellip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plan-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.plan-item:last-child{border-bottom:0}
+.plan-item .tm{width:72px;color:var(--muted);flex:none}
+.plan-item.now{color:var(--accent);font-weight:700}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;flex:1}
+.bar i{display:block;height:100%;border-radius:99px}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--card);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+nav button{flex:1;background:none;color:var(--muted);padding:6px 0;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button .ic{font-size:20px;line-height:1}
+nav button.on{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+.toast.on{opacity:1}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:8px 0 4px}
+svg text{fill:var(--muted);font-size:17px}
+.loc{font-size:13px;margin-top:8px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hdr">Daily Planner &amp; Journal</h1>
+  <div class="sub">Made by Sadish (AI enabled)</div>
+</header>
+
+<main>
+  <div class="banner" id="geoBanner"></div>
+
+  <!-- TODAY -->
+  <section class="view on" id="v-today">
+    <div class="card">
+      <div class="row between">
+        <input type="date" id="date" style="max-width:190px">
+        <span class="muted" id="dayName"></span>
+      </div>
+      <div class="score" style="margin-top:12px">
+        <svg class="ring" viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke="var(--line)" stroke-width="9"/><circle id="ringArc" cx="40" cy="40" r="32" fill="none" stroke="var(--good)" stroke-width="9" stroke-linecap="round" stroke-dasharray="0 201" transform="rotate(-90 40 40)"/><text x="40" y="45" text-anchor="middle" id="ringTxt" style="font-size:17px;font-weight:700;fill:var(--ink)">0%</text></svg>
+        <div>
+          <div class="status" id="statusTxt">Not logged yet</div>
+          <div class="muted" id="statusSub">Tick your habits as you go</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="nowCard">
+      <div class="row between"><h2 style="margin:0">⏱️ Right now</h2><button class="small" id="togglePlan">Full day</button></div>
+      <div id="nowBlock" style="margin-top:8px;font-weight:600"></div>
+      <div id="planList" style="display:none;margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <h2>✅ Habits</h2>
+      <div id="habits"></div>
+    </div>
+
+    <div class="card">
+      <h2>⚖️ Body &amp; mind</h2>
+      <label class="f" for="weight">Weight (kg)</label>
+      <input id="weight" type="number" inputmode="decimal" step="0.1" placeholder="e.g. 82.4">
+      <label class="f">Energy (1–5)</label>
+      <div class="chips" id="energy"></div>
+      <label class="f">Mood</label>
+      <div class="chips" id="mood"></div>
+    </div>
+
+    <div class="card">
+      <h2>📓 Journal</h2>
+      <label class="f" for="achieved">✅ What we achieved</label>
+      <textarea id="achieved"></textarea>
+      <label class="f" for="notgood">⚠️ What was not good</label>
+      <textarea id="notgood"></textarea>
+      <label class="f" for="fix">🔧 Fix for tomorrow</label>
+      <textarea id="fix"></textarea>
+      <label class="f" for="top3">📝 Tomorrow's top 3</label>
+      <textarea id="top3" placeholder="1.&#10;2.&#10;3."></textarea>
+    </div>
+
+    <div class="card">
+      <div class="row between"><h2 style="margin:0">📍 Geo tag</h2><button class="small" id="tagBtn">Tag location</button></div>
+      <div class="loc muted" id="locTxt">No location tagged yet. It's added automatically when you save.</div>
+    </div>
+
+    <button class="primary" id="saveBtn">Save day</button>
+    <footer>Made by Sadish (AI enabled)</footer>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="view" id="v-insights">
+    <div class="card">
+      <div class="row between"><h2 style="margin:0">📡 Observability</h2><input type="month" id="month" style="max-width:170px"></div>
+    </div>
+    <div class="card"><div class="signal" id="signal"></div></div>
+    <div class="card"><div class="kpis" id="kpis"></div></div>
+    <div class="card"><h2>Weight trend</h2><div id="wChart"></div></div>
+    <div class="card"><h2>Daily score</h2><div id="sChart"></div></div>
+    <div class="card"><h2>Habit hit rate</h2><div id="habitRates"></div></div>
+    <div class="card"><h2>📍 Where the days happened</h2><div id="placeStats"></div></div>
+    <footer>Made by Sadish (AI enabled)</footer>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="view" id="v-history">
+    <div class="card"><h2>📚 Journal history</h2><div id="historyList"></div></div>
+    <div class="card">
+      <h2>💾 Backup &amp; export</h2>
+      <p class="muted" style="margin-top:0">Your data lives on this phone. Back it up weekly.</p>
+      <div class="chips">
+        <button class="small" id="expCsv">Export CSV (for the Sheet)</button>
+        <button class="small" id="expJson">Backup file</button>
+        <button class="small" id="impJson">Restore backup</button>
+      </div>
+      <input type="file" id="impFile" accept="application/json,.json" style="display:none">
+    </div>
+    <footer>Made by Sadish (AI enabled)</footer>
+  </section>
+
+  <!-- PLACES -->
+  <section class="view" id="v-places">
+    <div class="card">
+      <h2>📍 Geo reminders</h2>
+      <p class="muted" style="margin-top:0" id="placeIntro">Save a place. Each time you open the app there, it shows that place's reminder. With alerts on, it also buzzes when you arrive while the app is open.</p>
+      <button class="small" id="notifBtn">Turn on arrival alerts</button>
+    </div>
+    <div class="card">
+      <h2>Add this spot</h2>
+      <label class="f" for="pName">Place name</label>
+      <input id="pName" placeholder="Home, Park, Office…">
+      <label class="f" for="pRem">Reminder when I'm here</label>
+      <input id="pRem" placeholder="Fill today's journal + weight">
+      <label class="f" for="pRad">Radius (metres)</label>
+      <input id="pRad" type="number" inputmode="numeric" value="150">
+      <div style="height:10px"></div>
+      <button class="primary" id="addPlace">📍 Save my current location as this place</button>
+    </div>
+    <div class="card"><h2>Saved places</h2><div id="placeList"></div></div>
+    <footer>Made by Sadish (AI enabled)</footer>
+  </section>
+</main>
+
+<nav>
+  <button class="on" data-v="today"><span class="ic">🗓️</span>Today</button>
+  <button data-v="insights"><span class="ic">📡</span>Insights</button>
+  <button data-v="history"><span class="ic">📚</span>History</button>
+  <button data-v="places"><span class="ic">📍</span>Places</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const HABITS=[
+ {id:"brush",name:"Brush + black coffee",t:"15 min"},
+ {id:"walk",name:"Walk / exercise",t:"45 min"},
+ {id:"bath",name:"Bath / shave",t:"30 min"},
+ {id:"study",name:"Studies",t:"2.5 hrs"},
+ {id:"job",name:"Job search",t:"1 hr"},
+ {id:"build",name:"Build product",t:"3 hrs"},
+ {id:"mc",name:"Mastercard work",t:"5–9 PM"},
+ {id:"plan",name:"Plan tomorrow",t:"15 min"},
+ {id:"sleep",name:"Sleep by 12 AM",t:"daily"}];
+const PLAN=[
+ [420,435,"7:00 AM","Wake, brush, black coffee"],[435,480,"7:15 AM","Walk / exercise"],
+ [480,510,"8:00 AM","Bath, shave"],[510,660,"8:30 AM","Studies (deep focus)"],
+ [660,720,"11:00 AM","Job search — 3 applications or 2 follow-ups"],[720,780,"12:00 PM","Lunch + break"],
+ [780,960,"1:00 PM","Build product (phone on silent)"],[960,1020,"4:00 PM","Buffer / rest"],
+ [1020,1260,"5:00 PM","Mastercard — cases, notes, feedback"],[1260,1350,"9:00 PM","Dinner, family time"],
+ [1350,1365,"10:30 PM","Fill journal + plan tomorrow"],[1365,1440,"10:45 PM","Wind down, no screens"],
+ [0,420,"12:00 AM","Sleep"]];
+const MOODS=["😄 Great","🙂 Good","😐 Okay","😔 Low"];
+const KEY="sadish-planner-v1";
+const DEFAULT_PLACES=[];
+
+let store={entries:{},places:DEFAULT_PLACES};
+try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);store={entries:p.entries||{},places:p.places||[]};}}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(store));return true}catch(e){toast("Couldn't save on this device");return false}}
+
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseYmd=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("on"),2600)}
+/* Android app bridge (window.Android exists only inside the APK) */
+const NATIVE=typeof window.Android!=="undefined";
+window.__nativeToast=toast;
+const locCbs={};
+window.__nativeLoc=(id,lat,lng,acc,err)=>{const cb=locCbs[id];delete locCbs[id];if(cb)cb(err?null:{lat,lng,acc})};
+function syncPlaces(){if(NATIVE)try{Android.syncPlaces(JSON.stringify(store.places))}catch(e){}}
+
+const scoreOf=e=>e?HABITS.filter(h=>e.habits&&e.habits[h.id]).length/HABITS.length:0;
+const logged=e=>!!e&&(scoreOf(e)>0||e.weight!=null&&e.weight!==""||(e.achieved||"").trim()!=="");
+function statusOf(s){return s>=0.8?{t:"🟢 On track",c:"g",col:"var(--good)"}:s>=0.5?{t:"🟡 Slipping",c:"y",col:"var(--warn)"}:{t:"🔴 Off track",c:"r",col:"var(--bad)"}}
+
+/* ---------- Today ---------- */
+let cur=null, curDate=ymd(new Date());
+function blank(){return{habits:{},weight:"",energy:null,mood:null,achieved:"",notgood:"",fix:"",top3:"",geo:null}}
+function load(date){
+  curDate=date;$("date").value=date;
+  cur=JSON.parse(JSON.stringify(store.entries[date]||blank()));
+  $("dayName").textContent=parseYmd(date).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"});
+  ["weight","achieved","notgood","fix","top3"].forEach(k=>$(k).value=cur[k]??"");
+  renderHabits();renderChips();renderScore();renderGeo();
+}
+function renderHabits(){
+  $("habits").innerHTML=HABITS.map(h=>`<div class="habit ${cur.habits[h.id]?"done":""}" data-h="${h.id}" role="checkbox" aria-checked="${!!cur.habits[h.id]}" tabindex="0"><div class="tick"></div><div class="name">${h.name}</div><div class="t">${h.t}</div></div>`).join("");
+}
+$("habits").addEventListener("click",ev=>{const el=ev.target.closest(".habit");if(!el)return;const id=el.dataset.h;cur.habits[id]=!cur.habits[id];el.classList.toggle("done",cur.habits[id]);el.setAttribute("aria-checked",cur.habits[id]);renderScore();autosave()});
+function renderChips(){
+  $("energy").innerHTML=[1,2,3,4,5].map(n=>`<span class="chip ${cur.energy===n?"on":""}" data-e="${n}">${n}</span>`).join("");
+  $("mood").innerHTML=MOODS.map(m=>`<span class="chip ${cur.mood===m?"on":""}" data-m="${m}">${m}</span>`).join("");
+}
+$("energy").addEventListener("click",ev=>{const c=ev.target.closest(".chip");if(!c)return;const n=+c.dataset.e;cur.energy=cur.energy===n?null:n;renderChips();autosave()});
+$("mood").addEventListener("click",ev=>{const c=ev.target.closest(".chip");if(!c)return;const m=c.dataset.m;cur.mood=cur.mood===m?null:m;renderChips();autosave()});
+function renderScore(){
+  const s=scoreOf(cur),st=statusOf(s),L=2*Math.PI*32;
+  $("ringArc").setAttribute("stroke-dasharray",`${(s*L).toFixed(1)} ${L.toFixed(1)}`);
+  $("ringArc").setAttribute("stroke",st.col);
+  $("ringTxt").textContent=Math.round(s*100)+"%";
+  const done=HABITS.filter(h=>cur.habits[h.id]).length;
+  if(!logged(cur)){$("statusTxt").textContent="Not logged yet";$("statusSub").textContent="Tick your habits as you go";}
+  else{$("statusTxt").textContent=st.t;$("statusSub").textContent=`${done} of ${HABITS.length} habits done`;}
+}
+["weight","achieved","notgood","fix","top3"].forEach(k=>$(k).addEventListener("input",()=>{cur[k]=$(k).value;if(k==="weight"||k==="achieved")renderScore();autosave()}));
+$("date").addEventListener("change",()=>{if($("date").value)load($("date").value)});
+
+let saveTimer,dirty=false;
+function autosave(){dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(()=>commit(false),600)}
+function commit(show){
+  if(!dirty&&!show)return;dirty=false;
+  const e=JSON.parse(JSON.stringify(cur));e.weight=e.weight===""?"":Number(e.weight);
+  if(logged(e)||store.entries[curDate]){store.entries[curDate]=e;e.updated=new Date().toISOString();}
+  if(persist()&&show)toast("Saved ✓");
+}
+$("saveBtn").addEventListener("click",async()=>{
+  dirty=true;commit(false);
+  if(!cur.geo){const g=await getLoc(true);if(g){cur.geo=g;renderGeo();}}
+  commit(true);
+});
+
+/* ---------- Plan / now ---------- */
+function renderNow(){
+  const d=new Date(),m=d.getHours()*60+d.getMinutes();
+  const b=PLAN.find(p=>m>=p[0]&&m<p[1])||PLAN.at(-1);
+  const left=b[1]-m;
+  $("nowBlock").innerHTML=`${esc(b[3])} <span class="muted">· ${left>=60?Math.floor(left/60)+"h "+(left%60)+"m":left+"m"} left</span>`;
+  $("planList").innerHTML=PLAN.slice(0,-1).concat([PLAN.at(-1)]).map(p=>`<div class="plan-item ${p===b?"now":""}"><span class="tm">${p[2]}</span><span>${esc(p[3])}</span></div>`).join("");
+}
+$("togglePlan").addEventListener("click",()=>{const l=$("planList"),on=l.style.display==="none";l.style.display=on?"block":"none";$("togglePlan").textContent=on?"Hide":"Full day"});
+
+/* ---------- Geo ---------- */
+function dist(a,b){const R=6371000,t=x=>x*Math.PI/180,dLa=t(b.lat-a.lat),dLo=t(b.lng-a.lng);const h=Math.sin(dLa/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function nearestPlace(g){let best=null;for(const p of store.places){const d=dist(g,p);if(d<=(p.radius||150)&&(!best||d<best.d))best={p,d}}return best}
+function getLoc(quiet){
+  if(NATIVE)return new Promise(res=>{
+    const id="c"+Date.now()+Math.random().toString(36).slice(2,7);
+    locCbs[id]=r=>{if(!r){if(!quiet)toast("Couldn't get location — check GPS is on");return res(null)}
+      const g={lat:+r.lat.toFixed(6),lng:+r.lng.toFixed(6),acc:Math.round(r.acc),at:new Date().toISOString()};const n=nearestPlace(g);g.place=n?n.p.name:null;res(g)};
+    try{Android.requestLocation(id)}catch(e){delete locCbs[id];res(null)}
+  });
+  return new Promise(res=>{
+    if(!("geolocation" in navigator)){if(!quiet)toast("Location not available");return res(null)}
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const g={lat:+pos.coords.latitude.toFixed(6),lng:+pos.coords.longitude.toFixed(6),acc:Math.round(pos.coords.accuracy),at:new Date().toISOString()};
+      const n=nearestPlace(g);g.place=n?n.p.name:null;res(g);
+    },err=>{if(!quiet)toast(err.code===1?"Allow location for this app in browser settings":"Couldn't get location");res(null)},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+  });
+}
+function renderGeo(){
+  const g=cur.geo;
+  if(!g){$("locTxt").innerHTML="No location tagged yet. It's added automatically when you save.";return}
+  const t=new Date(g.at).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  $("locTxt").innerHTML=`${g.place?`<b>${esc(g.place)}</b> · `:""}${g.lat}, ${g.lng} (±${g.acc} m) · ${t}<br><a href="https://maps.google.com/?q=${g.lat},${g.lng}" target="_blank" rel="noopener">Open in Maps</a>`;
+}
+$("tagBtn").addEventListener("click",async()=>{$("tagBtn").textContent="Locating…";const g=await getLoc(false);$("tagBtn").textContent="Tag location";if(g){cur.geo=g;renderGeo();dirty=true;commit(false);toast(g.place?`Tagged: ${g.place}`:"Location tagged")}});
+
+/* geo reminders while app is open */
+let lastPlaceHit=null;
+function showPlaceReminder(g){
+  const n=nearestPlace(g);const b=$("geoBanner");
+  if(!n){b.classList.remove("on");lastPlaceHit=null;return}
+  b.innerHTML=`📍 <b>You're at ${esc(n.p.name)}</b><br>${esc(n.p.reminder||"")}`;b.classList.add("on");
+  if(lastPlaceHit!==n.p.id){
+    lastPlaceHit=n.p.id;
+    if(navigator.vibrate)try{navigator.vibrate([120,80,120])}catch(e){}
+    if("Notification" in window&&Notification.permission==="granted"&&navigator.serviceWorker){
+      navigator.serviceWorker.ready.then(r=>r.showNotification(`📍 ${n.p.name}`,{body:n.p.reminder||"",icon:"icon-192.png",tag:"place-"+n.p.id})).catch(()=>{});
+    }
+  }
+}
+let watchId=null;
+function startWatch(){
+  if(watchId!==null||!("geolocation" in navigator))return;
+  watchId=navigator.geolocation.watchPosition(pos=>{showPlaceReminder({lat:pos.coords.latitude,lng:pos.coords.longitude})},()=>{},{enableHighAccuracy:true,maximumAge:30000});
+}
+async function maybeAutoWatch(){
+  if(NATIVE){getLoc(true).then(g=>{if(g)showPlaceReminder(g)});return}
+  try{if(navigator.permissions){const p=await navigator.permissions.query({name:"geolocation"});if(p.state==="granted")startWatch();}}catch(e){}
+}
+$("notifBtn").addEventListener("click",async()=>{
+  if(NATIVE){try{Android.enableBackgroundAlerts()}catch(e){toast("Couldn't turn on alerts")}return}
+  startWatch();
+  if("Notification" in window){const r=await Notification.requestPermission();toast(r==="granted"?"Arrival alerts on":"Alerts blocked — banner only")}
+  else toast("Banner reminders on");
+});
+
+/* ---------- Places ---------- */
+function renderPlaces(){
+  $("placeList").innerHTML=store.places.length?store.places.map(p=>`<div class="list-item"><div class="grow"><b>${esc(p.name)}</b><div class="muted ellip">${esc(p.reminder||"No reminder")} · ${p.radius} m</div></div><a class="small" href="https://maps.google.com/?q=${p.lat},${p.lng}" target="_blank" rel="noopener">Map</a><button class="small" data-del="${p.id}">Delete</button></div>`).join(""):`<div class="muted">No places yet. Stand at Home, type "Home", and tap Save.</div>`;
+}
+$("placeList").addEventListener("click",ev=>{const b=ev.target.closest("[data-del]");if(!b)return;
+  if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Tap again";setTimeout(()=>{b.dataset.confirm="";b.textContent="Delete"},2500);return}
+  store.places=store.places.filter(p=>p.id!==b.dataset.del);persist();syncPlaces();renderPlaces();toast("Place deleted")});
+$("addPlace").addEventListener("click",async()=>{
+  const name=$("pName").value.trim();if(!name){toast("Give the place a name");return}
+  $("addPlace").textContent="Locating…";const g=await getLoc(false);$("addPlace").textContent="📍 Save my current location as this place";if(!g)return;
+  store.places.push({id:Date.now().toString(36),name,reminder:$("pRem").value.trim(),radius:Math.max(50,+$("pRad").value||150),lat:g.lat,lng:g.lng});
+  persist();syncPlaces();$("pName").value="";$("pRem").value="";renderPlaces();toast(`Saved ${name} (±${g.acc} m)`);startWatch();
+});
+
+/* ---------- Insights ---------- */
+function monthEntries(ym){return Object.keys(store.entries).filter(d=>d.startsWith(ym)&&logged(store.entries[d])).sort().map(d=>({d,e:store.entries[d],s:scoreOf(store.entries[d])}))}
+function streaks(){
+  const days=Object.keys(store.entries).filter(d=>logged(store.entries[d])).sort();
+  let best=0,run=0,prev=null,curRun=0;
+  for(const d of days){const ok=scoreOf(store.entries[d])>=0.8;const cont=prev&&(parseYmd(d)-parseYmd(prev))/864e5===1;
+    run=ok?(cont?run+1:1):0;best=Math.max(best,run);prev=d;}
+  curRun=run; const last=days.at(-1);
+  if(last){const gap=(parseYmd(ymd(new Date()))-parseYmd(last))/864e5;if(gap>1)curRun=0;}
+  return{cur:curRun,best};
+}
+function lineChart(pts){
+  if(!pts.length)return`<div class="muted">Log your weight to see the trend.</div>`;
+  const W=600,H=200,l=52,r=84,t=14,b=26;let lo=Math.min(...pts.map(p=>p.v)),hi=Math.max(...pts.map(p=>p.v));
+  if(hi-lo<2){const m=(hi+lo)/2;lo=m-1;hi=m+1}
+  const x=i=>l+(pts.length===1?(W-l-r)/2:i*(W-l-r)/(pts.length-1)),y=v=>t+(H-t-b)*(1-(v-lo)/(hi-lo));
+  const ticks=[lo,(lo+hi)/2,hi];const every=Math.ceil(pts.length/6);const last=pts.at(-1);
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%">${ticks.map(v=>`<line x1="${l}" x2="${W-10}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${l-6}" y="${y(v)+4}" text-anchor="end">${v.toFixed(1)}</text>`).join("")}
+  <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${pts.map((p,i)=>`${x(i)},${y(p.v)}`).join(" ")}"/>
+  ${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.v)}" r="${i===pts.length-1?4.5:2.5}" fill="var(--accent)"/>`).join("")}
+  ${pts.map((p,i)=>(i%every===0||i===pts.length-1)?`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${p.l}</text>`:"").join("")}
+  <text x="${x(pts.length-1)+8}" y="${y(last.v)+4}" style="fill:var(--ink);font-weight:700;font-size:19px">${last.v} kg</text></svg>`;
+}
+function barChart(rows){
+  if(!rows.length)return`<div class="muted">No days logged this month yet.</div>`;
+  const W=600,H=170,l=10,b=24,t=10,bw=Math.min(18,(W-2*l)/rows.length*0.7),step=(W-2*l)/rows.length;
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%"><line x1="${l}" x2="${W-l}" y1="${t+(H-t-b)*0.2}" y2="${t+(H-t-b)*0.2}" stroke="var(--good)" stroke-opacity=".5"/>
+  ${rows.map((r,i)=>{const h=Math.max(2,(H-t-b)*r.s),c=statusOf(r.s).col,cx=l+i*step+step/2;return`<rect x="${cx-bw/2}" y="${H-b-h}" width="${bw}" height="${h}" rx="3" fill="${c}"/>${(rows.length<=10||i%3===0)?`<text x="${cx}" y="${H-7}" text-anchor="middle">${+r.d.slice(8)}</text>`:""}`}).join("")}</svg><div class="muted">Green line = 80% target</div>`;
+}
+function renderInsights(){
+  const ym=$("month").value||ymd(new Date()).slice(0,7);const rows=monthEntries(ym);
+  const n=rows.length,avg=n?rows.reduce((a,r)=>a+r.s,0)/n:null;const st=streaks();
+  const ws=rows.filter(r=>r.e.weight!==""&&r.e.weight!=null&&!isNaN(r.e.weight)).map(r=>({v:+r.e.weight,l:parseYmd(r.d).toLocaleDateString(undefined,{day:"numeric",month:"short"})}));
+  const chg=ws.length>1?ws.at(-1).v-ws[0].v:null;
+  const en=rows.filter(r=>r.e.energy).map(r=>r.e.energy);const avgE=en.length?en.reduce((a,b)=>a+b,0)/en.length:null;
+  $("kpis").innerHTML=[
+    [n,"Days logged"],[avg==null?"—":Math.round(avg*100)+"%","Avg score"],[st.cur+" 🔥","Current streak"],
+    [st.best,"Best streak"],[chg==null?(ws.length?ws[0].v:"—"):(chg>0?"+":"")+chg.toFixed(1),chg==null?"Weight (kg)":"Weight change"],[avgE==null?"—":avgE.toFixed(1),"Avg energy"]
+  ].map(k=>`<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join("");
+  const rates=HABITS.map(h=>({h,c:rows.filter(r=>r.e.habits&&r.e.habits[h.id]).length})).map(o=>({...o,r:n?o.c/n:0}));
+  $("habitRates").innerHTML=n?rates.map(o=>{const s=statusOf(o.r);return`<div class="row" style="margin:8px 0"><span style="width:44%;font-size:14px">${o.h.name}</span><div class="bar"><i style="width:${Math.round(o.r*100)}%;background:${s.col}"></i></div><span style="width:44px;text-align:right;font-weight:650">${Math.round(o.r*100)}%</span></div>`}).join(""):`<div class="muted">No data yet.</div>`;
+  $("wChart").innerHTML=lineChart(ws);$("sChart").innerHTML=barChart(rows);
+  // places
+  const pc={};rows.forEach(r=>{const k=r.e.geo?(r.e.geo.place||"Untagged spot"):"No location";pc[k]=(pc[k]||0)+1});
+  $("placeStats").innerHTML=n?Object.entries(pc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row between" style="margin:6px 0"><span>${esc(k)}</span><b>${v} day${v>1?"s":""}</b></div>`).join(""):`<div class="muted">No data yet.</div>`;
+  // signal (the "AI" coach — rule based, runs on-device)
+  let sig;
+  if(!n)sig="🧠 Log your first day on the Today tab to start the analysis.";
+  else{
+    const last=rows.at(-1),weak=rates.slice().sort((a,b)=>a.r-b.r)[0],strong=rates.slice().sort((a,b)=>b.r-a.r)[0];
+    const lastMissed=HABITS.filter(h=>!(last.e.habits||{})[h.id]).map(h=>h.name);
+    const parts=[];
+    if(last.s>=0.8)parts.push(`Strong day (${Math.round(last.s*100)}%). Same plan tomorrow — protect the ${st.cur}-day streak.`);
+    else if(last.s>=0.5)parts.push(`Slipping (${Math.round(last.s*100)}%). Tomorrow, fix this first: <b>${lastMissed[0]||weak.h.name}</b>.`);
+    else parts.push(`Off track (${Math.round(last.s*100)}%). Reset: sleep by 12, then just the top 3 tomorrow.`);
+    if(n>=3)parts.push(`This month your weakest habit is <b>${weak.h.name}</b> (${Math.round(weak.r*100)}%); strongest is ${strong.h.name}.`);
+    if(chg!=null)parts.push(chg<0?`Weight ⬇️ ${Math.abs(chg).toFixed(1)} kg — keep going.`:chg>0?`Weight ⬆️ ${chg.toFixed(1)} kg — check walks and food.`:"Weight holding steady.");
+    if(avgE!=null&&en.length>=3){const wd=rows.filter(r=>r.e.habits&&r.e.habits.walk&&r.e.energy),nd=rows.filter(r=>r.e.habits&&!r.e.habits.walk&&r.e.energy);
+      if(wd.length&&nd.length){const a=wd.reduce((x,r)=>x+r.e.energy,0)/wd.length,bb=nd.reduce((x,r)=>x+r.e.energy,0)/nd.length;if(a-bb>=0.5)parts.push(`Your energy is ${(a-bb).toFixed(1)} points higher on days you walk.`)}}
+    sig="🧠 "+parts.join(" ");
+  }
+  $("signal").innerHTML=sig;
+}
+$("month").addEventListener("change",renderInsights);
+
+/* ---------- History ---------- */
+function renderHistory(){
+  const days=Object.keys(store.entries).filter(d=>logged(store.entries[d])).sort().reverse();
+  $("historyList").innerHTML=days.length?days.map(d=>{const e=store.entries[d],s=scoreOf(e),st=statusOf(s);
+    return`<div class="list-item" data-d="${d}"><div class="grow"><b>${parseYmd(d).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})}</b> <span class="pill ${st.c}">${Math.round(s*100)}%</span>${e.weight!==""&&e.weight!=null?` <span class="muted">· ${e.weight} kg</span>`:""}${e.geo&&e.geo.place?` <span class="muted">· 📍${esc(e.geo.place)}</span>`:""}<div class="muted ellip">${esc(e.achieved||e.notgood||"No journal notes")}</div></div><span class="muted">›</span></div>`}).join(""):`<div class="muted">No days saved yet.</div>`;
+}
+$("historyList").addEventListener("click",ev=>{const it=ev.target.closest("[data-d]");if(!it)return;load(it.dataset.d);show("today");window.scrollTo(0,0)});
+
+/* ---------- Export / import ---------- */
+function download(name,text,type){if(NATIVE){try{Android.saveFile(name,type,text)}catch(e){toast("Couldn't save the file")}return}const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+$("expCsv").addEventListener("click",()=>{
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const head=["Date","Day","Weight (kg)","Score","Status",...HABITS.map(h=>h.name),"Energy","Mood","What we achieved","What was not good","Fix for tomorrow","Tomorrow's top 3","Place","Latitude","Longitude"];
+  const lines=[head.map(q).join(",")];
+  Object.keys(store.entries).sort().forEach(d=>{const e=store.entries[d];if(!logged(e))return;const s=scoreOf(e);
+    lines.push([d,parseYmd(d).toLocaleDateString("en-GB",{weekday:"short"}),e.weight,Math.round(s*100)+"%",statusOf(s).t.slice(3),...HABITS.map(h=>e.habits[h.id]?"TRUE":"FALSE"),e.energy??"",e.mood??"",e.achieved,e.notgood,e.fix,e.top3,e.geo?.place??"",e.geo?.lat??"",e.geo?.lng??""].map(q).join(","))});
+  download(`daily-planner-${ymd(new Date())}.csv`,"﻿"+lines.join("\n"),"text/csv");toast("CSV exported");
+});
+$("expJson").addEventListener("click",()=>{download(`daily-planner-backup-${ymd(new Date())}.json`,JSON.stringify(store,null,1),"application/json");toast("Backup saved")});
+$("impJson").addEventListener("click",()=>$("impFile").click());
+$("impFile").addEventListener("change",async()=>{
+  const f=$("impFile").files[0];if(!f)return;
+  try{const p=JSON.parse(await f.text());if(!p.entries)throw 0;
+    store.entries={...store.entries,...p.entries};
+    const ids=new Set(store.places.map(x=>x.id));(p.places||[]).forEach(x=>{if(!ids.has(x.id))store.places.push(x)});
+    persist();syncPlaces();load(curDate);renderHistory();renderPlaces();toast("Backup restored")}
+  catch(e){toast("That isn't a planner backup file")}
+  $("impFile").value="";
+});
+
+/* ---------- Nav ---------- */
+function show(v){
+  document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  if(v==="insights")renderInsights();if(v==="history")renderHistory();if(v==="places")renderPlaces();if(v==="today")renderNow();
+}
+document.querySelector("nav").addEventListener("click",ev=>{const b=ev.target.closest("button");if(b){commit(false);show(b.dataset.v);window.scrollTo(0,0)}});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)commit(false);else{renderNow();if(curDate!==ymd(new Date())&&!logged(cur))load(ymd(new Date()));if(NATIVE)maybeAutoWatch()}});
+
+/* ---------- Boot ---------- */
+$("month").value=ymd(new Date()).slice(0,7);
+if(NATIVE){$("placeIntro").textContent="Save a place. When you arrive there you get a notification, even with the app closed. Opening the app there also shows the reminder.";$("notifBtn").textContent="Turn on background arrival alerts";syncPlaces()}
+load(ymd(new Date()));renderNow();setInterval(renderNow,60000);maybeAutoWatch();
+if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+</script>
+</body>
+</html>

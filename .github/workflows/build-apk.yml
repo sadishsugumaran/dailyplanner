@@ -1,0 +1,61 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android platform
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Prepare signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > app/release.keystore
+            echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
+            echo "Using saved signing key"
+          else
+            keytool -genkeypair -keystore app/release.keystore -alias dailyplanner -keyalg RSA -keysize 2048 -validity 10000 -storepass dailyplanner -keypass dailyplanner -dname "CN=Sadish Sugumaran, C=IN"
+            echo "::warning::No KEYSTORE_BASE64 secret - signed with a one-off key"
+          fi
+
+      - name: Build release APK
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Name the APK
+        run: cp app/build/outputs/apk/release/app-release.apk DailyPlanner-v1.0.${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DailyPlanner-APK
+          path: DailyPlanner-v1.0.${{ github.run_number }}.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Daily Planner v1.0.${{ github.run_number }}
+          body: "Daily Planner & Journal — Made by Sadish (AI enabled). Download the APK below and open it on your Android phone to install."
+          files: DailyPlanner-v1.0.${{ github.run_number }}.apk
